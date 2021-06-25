@@ -1,0 +1,49 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>My Object Name</title>
+		<link rel="stylesheet" href="style.css">
+	</head>
+	<body>
+		<header>
+			<h1>My Object Name</h1>
+		</header>
+		<main>
+			<!--
+			<table>
+				<tr>
+					<label for="joint1">Joint 1</label>
+					<input type="range" min="0" max="100" value="0" id="joint1">
+				</tr>
+				<tr>
+					<label for="joint2">Joint 2</label>
+					<input type="range" min="0" max="100" value="0" id="joint2">
+				</tr>
+			</table>
+			-->
+			<div id="controller">
+				<div class="slider">
+					<label for="joint1">Joint 1</label>
+					<input type="range" min="0" max="100" value="0" id="joint1">
+				</div>
+				<div class="slider">
+					<label for="joint2">Joint 2</label>
+					<input type="range" min="0" max="100" value="0" id="joint2">
+				</div>
+				<div class="slider">
+					<label for="joint3">Joint 3</label>
+					<input type="range" min="0" max="100" value="0" id="joint3">
+				</div>
+			</div>
+			<div id="canvas-container">
+				<canvas id="mycanvas" width="800px" height="600px"></canvas>
+			</div>
+		</main>
+		<img id="mytexture" src="pencil.png">
+		<footer>
+			<p>Abdi Haryadi, 2021</p>
+		</footer>
+		<script src="scripts.js"></script>
+	</body>
+</html>

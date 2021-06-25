@@ -1,11 +1,27 @@
 function matrixMult(m1, m2) {
 	// Assume m1 and m2 are 4x4 matrixMult
+	console.log(m2);
 	var m3 = [];
 	for (var i = 0; i < 4; i++) {
 		for (var j = 0; j < 4; j++) {
 			var currElement = 0;
 			for (var k = 0; k < 4; k++) {
 				currElement += m1[4 * i + k] * m2[4 * k + j];
+			}
+			m3.push(currElement);
+		}
+	}
+	return m3;
+}
+
+function matrixMult2(m1, m2, r, n, c) {
+	// Assume m1 is rxn matrix, m2 is nxc matrix
+	var m3 = [];
+	for (var i = 0; i < r; i++) {
+		for (var j = 0; j < c; j++) {
+			var currElement = 0;
+			for (var k = 0; k < n; k++) {
+				currElement += m1[n * i + k] * m2[c * k + j];
 			}
 			m3.push(currElement);
 		}
@@ -68,6 +84,16 @@ var translationMatrix = (x, y) => {
 		1, 0, 0, x,
 		0, 1, 0, y,
 		0, 0, 1, 0,
+		0, 0, 0, 1
+	];
+};
+
+var translationMatrix3D = (x, y, z) => {
+	console.log(x, y, z);
+	return [
+		1, 0, 0, x,
+		0, 1, 0, y,
+		0, 0, 1, z,
 		0, 0, 0, 1
 	];
 };
@@ -211,9 +237,88 @@ class Balok {
 		}
 	}
 	
+	getChilds() {
+		if (this.firstChild === null) {
+			return [];
+		} else {
+			return [this.firstChild].concat(this.firstChild.getSiblings());
+		}
+	}
+	
+	getSiblings() {
+		if (this.nextSibling === null) {
+			return [];
+		} else {
+			return [this.nextSibling].concat(this.nextSibling.getSiblings());
+		}
+	}
+	
+	rotateX(rad, posX, posY, posZ) {
+		console.log(this.transformationMatrix);
+		this.transformationMatrix = matrixMult(translationMatrix3D(-posX, -posY, -posZ), this.transformationMatrix);
+		this.transformationMatrix = matrixMult(xAxisRotationMatrix(rad), this.transformationMatrix);
+		this.transformationMatrix = matrixMult(translationMatrix3D(posX, posY, posZ), this.transformationMatrix);
+		
+		this.getChilds()
+			.forEach(child => {
+				console.log(child);
+				child.rotateX(rad, posX, posY, posZ)
+			});
+	}
+	
+	rotateY(rad, posX, posY, posZ) {
+		console.log(this.transformationMatrix);
+		this.transformationMatrix = matrixMult(translationMatrix3D(-posX, -posY, -posZ), this.transformationMatrix);
+		this.transformationMatrix = matrixMult(yAxisRotationMatrix(rad), this.transformationMatrix);
+		this.transformationMatrix = matrixMult(translationMatrix3D(posX, posY, posZ), this.transformationMatrix);
+		
+		this.getChilds()
+			.forEach(child => {
+				console.log(child);
+				rotateX(rad, posX, posY, posZ)
+			});
+	}
+	
+	rotateZ(rad, posX, posY, posZ) {
+		console.log(this.transformationMatrix);
+		this.transformationMatrix = matrixMult(translationMatrix3D(-posX, -posY, -posZ), this.transformationMatrix);
+		this.transformationMatrix = matrixMult(zAxisRotationMatrix(rad), this.transformationMatrix);
+		this.transformationMatrix = matrixMult(translationMatrix3D(posX, posY, posZ), this.transformationMatrix);
+		
+		this.getChilds()
+			.forEach(child => {
+				console.log(child);
+				rotateX(rad, posX, posY, posZ)
+			});
+	}
+	
+	getActualVertices() {
+		var actualVertices = [];
+		var currentVertexCoordinate = [0, 0, 0];
+		let axisNum = 0; 
+		this.vertices.forEach(el => {
+			currentVertexCoordinate[axisNum] = el;
+			if (axisNum == 2) {
+				let transformedCoordinate = matrixMult2(
+					this.transformationMatrix,
+					currentVertexCoordinate.concat([1]), 4, 4, 1
+				);
+				actualVertices = actualVertices.concat([
+					transformedCoordinate[0],
+					transformedCoordinate[1],
+					transformedCoordinate[2]
+				]);
+				currentVertexCoordinate = [0, 0, 0];
+			}
+			axisNum = (axisNum + 1) % 3;
+		});
+		return actualVertices;
+	}
+	
 	render(gl, vertexBuffer, indexBuffer, textureBuffer) {
+		// console.log(this.getActualVertices());
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getActualVertices()), gl.STATIC_DRAW);
 		gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
@@ -279,13 +384,27 @@ var indices = [];
 var textureCoordinates = [];
 var numPoints = 0;
 
+
+const lowerLeftLeg = new Balok(1, 1, 0, 1, 2, 1);
+const lowerRightLeg = new Balok(-1, 1, 0, 1, 2, 1); // Lower right leg
+const upperLeftLeg = new Balok(1, 4, 0, 1, 2, 1); // Upper left leg
+const upperRightLeg = new Balok(-1, 4, 0, 1, 2, 1); // Upper right leg
+const torso = new Balok(0, 8, 0, 3, 4, 3); // Torso
+const lowerLeftArm = new Balok(3, 6, 0, 1, 2, 1); // Lower left arm
+const lowerRightArm = new Balok(-3, 6, 0, 1, 2, 1); // Lower right arm
+const upperLeftArm = new Balok(3, 9, 0, 1, 2, 1); // Upper left arm
+const upperRightArm = new Balok(-3, 9, 0, 1, 2, 1); // Upper right arm
+const neck = new Balok(0, 11.5, 0, 1, 1, 1); // Neck
+const head = new Balok(0, 14.5, 0, 3, 3, 3); // Head
+
+
 baloks = [
 	// new Balok(0, -0.5, 0, 100, 1, 100), // Plane
 	new Balok(1, 1, 0, 1, 2, 1), // Lower left leg (robot POV)
 	new Balok(-1, 1, 0, 1, 2, 1), // Lower right leg
 	new Balok(1, 4, 0, 1, 2, 1), // Upper left leg
 	new Balok(-1, 4, 0, 1, 2, 1), // Upper right leg
-	new Balok(0, 8, 0, 3, 4, 3), // Torso
+	new Balok(0, 8, 0, 3, 4, 1), // Torso
 	new Balok(3, 6, 0, 1, 2, 1), // Lower left arm
 	new Balok(-3, 6, 0, 1, 2, 1), // Lower right arm
 	new Balok(3, 9, 0, 1, 2, 1), // Upper left arm
@@ -293,6 +412,11 @@ baloks = [
 	new Balok(0, 11.5, 0, 1, 1, 1), // Neck
 	new Balok(0, 14.5, 0, 3, 3, 3) // Head
 ];
+
+baloks[2].addChild(baloks[0]);
+baloks[2].rotateX(Math.PI / 2, 1, 6.5, 0);
+
+
 
 // Combine
 gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
@@ -367,15 +491,14 @@ function loadTexture(url) {
 		imgElement.addEventListener("error", function imgOnError() {
 			reject();
 		});
-		
-		//myImg.crossOrigin = "anonymous";
+
 		imgElement.src = url;
 	});
 	
 	return imgPromise;
 }
 
-loadTexture("pencil.png").then(
+loadTexture("hole.jpg").then(
 	function fulfilled(img) {
 		console.log("Texture loaded");
 		render();
@@ -425,45 +548,35 @@ gl.uniform1i(textureLocation, 0.0);
 gl.uniformMatrix4fv(translationMatrixLoc, false, new Float32Array(currentMatrix));
 
 var yDegree = 0;
+var handDegree = 0;
 
+var rotateInterval;
+var rotating = false;
 
-setInterval(() => {
-	currentMatrix = matrixMult(yAxisRotationMatrix(yDegree), scaleMatrix(.05, .05, .05));
-	currentMatrix = matrixMult(translationMatrix(0, -0.5), currentMatrix);
-	gl.uniformMatrix4fv(translationMatrixLoc, false, new Float32Array(currentMatrix));
-	render();
-	yDegree += 0.01;
-}, 40);
+function startRotating() {
+	rotating = true;
+	rotateInterval = setInterval(() => {
+		currentMatrix = matrixMult(yAxisRotationMatrix(yDegree), scaleMatrix(.05, .05, .05));
+		currentMatrix = matrixMult(translationMatrix(0, -0.5), currentMatrix);
+		gl.uniformMatrix4fv(translationMatrixLoc, false, new Float32Array(currentMatrix));
+		render();
+		yDegree += 0.05;
+	}, 40);
+}
+
+function stopRotating() {
+	clearInterval(rotateInterval);
+	rotating = false;
+}
+
+function switchRotating() {
+	if (rotating) {
+		stopRotating();
+	} else {
+		startRotating();
+	}
+}
+
 
 
 // Create stop animation
-
-
-// Test
-function testImage(url) {
-	const imgPromise = new Promise(function imgPromise(resolve, reject) {
-		const imgElement = new Image();
-		
-		imgElement.addEventListener("load", function imgOnLoad() {
-			resolve(this);
-		});
-		
-		imgElement.addEventListener("error", function imgOnError() {
-			reject();
-		});
-		
-		imgElement.src = url;
-	});
-	
-	return imgPromise;
-}
-
-testImage("pencil.png").then(
-	function fulfilled(img) {
-		console.log("Found and loaded");
-	},
-	
-	function rejected() {
-		console.log("Not found");
-	}
-);

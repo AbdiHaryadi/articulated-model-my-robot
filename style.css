@@ -21,6 +21,7 @@ main {
 
 .slider {
 	display: flex;
+	flex-direction: column;
 	padding: 20px;
 }
 
@@ -29,11 +30,12 @@ main {
 }
 
 #controller {
+	display: grid;
+	grid-template-columns: auto auto;
 	flex-grow: 1;
 }
 
 #canvas-container {
-	flex-grow: 2;
 	background-color: gray;
 }
 

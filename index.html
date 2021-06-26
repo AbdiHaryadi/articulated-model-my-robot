@@ -24,18 +24,50 @@
 			-->
 			<div id="controller">
 				<div class="slider">
-					<label for="joint1">Joint 1</label>
-					<input type="range" min="0" max="100" value="0" id="joint1">
+					<label for="torsoJoint">Torso (All)</label>
+					<input type="range" min="-180" max="180" value="0" id="torsoJoint">
 				</div>
 				<div class="slider">
-					<label for="joint2">Joint 2</label>
-					<input type="range" min="0" max="100" value="0" id="joint2">
+					<label for="neckJoint">Neck</label>
+					<input type="range" min="-60" max="60" value="0" id="neckJoint">
 				</div>
 				<div class="slider">
-					<label for="joint3">Joint 3</label>
-					<input type="range" min="0" max="100" value="0" id="joint3">
+					<label for="headJoint">Head</label>
+					<input type="range" min="-60" max="60" value="0" id="headJoint">
 				</div>
-				<button type="button" onclick="switchRotating();">Click here!</button>
+				<div class="slider">
+					<label for="upperLeftArmJoint">Upper Left Arm</label>
+					<input type="range" min="0" max="135" value="0" id="upperLeftArmJoint">
+				</div>
+				<div class="slider">
+					<label for="upperRightArmJoint">Upper Right Arm</label>
+					<input type="range" min="-135" max="0" value="0" id="upperRightArmJoint">
+				</div>
+				<div class="slider">
+					<label for="lowerLeftArmJoint">Lower Left Arm</label>
+					<input type="range" min="0" max="90" value="0" id="lowerLeftArmJoint">
+				</div>
+				<div class="slider">
+					<label for="lowerRightArmJoint">Lower Right Arm</label>
+					<input type="range" min="-90" max="0" value="0" id="lowerRightArmJoint">
+				</div>
+				<div class="slider">
+					<label for="upperLeftLegJoint">Upper Left Leg</label>
+					<input type="range" min="-60" max="60" value="0" id="upperLeftLegJoint">
+				</div>
+				<div class="slider">
+					<label for="upperRightLegJoint">Upper Right Leg</label>
+					<input type="range" min="-60" max="60" value="0" id="upperRightLegJoint">
+				</div>
+				<div class="slider">
+					<label for="lowerLeftLegJoint">Lower Left Leg</label>
+					<input type="range" min="0" max="90" value="0" id="lowerLeftLegJoint">
+				</div>
+				<div class="slider">
+					<label for="lowerRightLegJoint">Lower Right Leg</label>
+					<input type="range" min="0" max="90" value="0" id="lowerRightLegJoint">
+				</div>
+				<button type="button" onclick="randomPose();">Random Pose</button>
 			</div>
 			<div id="canvas-container">
 				<canvas id="mycanvas" width="800px" height="600px"></canvas>

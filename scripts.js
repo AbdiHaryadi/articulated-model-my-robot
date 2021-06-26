@@ -1,6 +1,5 @@
 function matrixMult(m1, m2) {
 	// Assume m1 and m2 are 4x4 matrixMult
-	console.log(m2);
 	var m3 = [];
 	for (var i = 0; i < 4; i++) {
 		for (var j = 0; j < 4; j++) {
@@ -89,7 +88,6 @@ var translationMatrix = (x, y) => {
 };
 
 var translationMatrix3D = (x, y, z) => {
-	console.log(x, y, z);
 	return [
 		1, 0, 0, x,
 		0, 1, 0, y,
@@ -176,6 +174,11 @@ function initializeGLProgram(gl, vertexShaderCode, fragmentShaderCode) {
 
 class Balok {
 	constructor(xPos, yPos, zPos, xScale, yScale, zScale) {
+		this.xOrigin = xPos;
+		this.yOrigin = yPos;
+		this.zOrigin = zPos;
+		
+		
 		const posXPlusHalfXScale = xPos + xScale / 2;
 		const posYPlusHalfYScale = yPos + yScale / 2;
 		const posZPlusHalfZScale = zPos + zScale / 2;
@@ -193,6 +196,20 @@ class Balok {
 			posXPlusHalfXScale, posYMinHalfYScale, posZMinHalfZScale,
 			posXMinHalfXScale, posYMinHalfYScale, posZMinHalfZScale
 		];
+		
+		
+		/*
+		this.vertices = [
+			0.5, 0.5, 0.5,
+			-0.5, 0.5, 0.5,
+			0.5, -0.5, 0.5,
+			-0.5, -0.5, 0.5,
+			0.5, 0.5, -0.5,
+			-0.5, 0.5, -0.5,
+			0.5, -0.5, -0.5,
+			-0.5, -0.5, -0.5
+		]
+		*/
 		
 		this.texCoords = [
 			1, 1,
@@ -253,46 +270,35 @@ class Balok {
 		}
 	}
 	
-	rotateX(rad, posX, posY, posZ) {
-		console.log(this.transformationMatrix);
-		this.transformationMatrix = matrixMult(translationMatrix3D(-posX, -posY, -posZ), this.transformationMatrix);
-		this.transformationMatrix = matrixMult(xAxisRotationMatrix(rad), this.transformationMatrix);
-		this.transformationMatrix = matrixMult(translationMatrix3D(posX, posY, posZ), this.transformationMatrix);
-		
-		this.getChilds()
-			.forEach(child => {
-				console.log(child);
-				child.rotateX(rad, posX, posY, posZ)
-			});
+	getOrigin() {
+		return [xOrigin, yOrigin, zOrigin];
 	}
 	
-	rotateY(rad, posX, posY, posZ) {
-		console.log(this.transformationMatrix);
-		this.transformationMatrix = matrixMult(translationMatrix3D(-posX, -posY, -posZ), this.transformationMatrix);
-		this.transformationMatrix = matrixMult(yAxisRotationMatrix(rad), this.transformationMatrix);
-		this.transformationMatrix = matrixMult(translationMatrix3D(posX, posY, posZ), this.transformationMatrix);
-		
-		this.getChilds()
-			.forEach(child => {
-				console.log(child);
-				rotateX(rad, posX, posY, posZ)
-			});
+	setOrigin(xOrigin, yOrigin, zOrigin) {
+		this.xOrigin = xOrigin;
+		this.yOrigin = yOrigin;
+		this.zOrigin = zOrigin;
 	}
 	
-	rotateZ(rad, posX, posY, posZ) {
-		console.log(this.transformationMatrix);
-		this.transformationMatrix = matrixMult(translationMatrix3D(-posX, -posY, -posZ), this.transformationMatrix);
-		this.transformationMatrix = matrixMult(zAxisRotationMatrix(rad), this.transformationMatrix);
-		this.transformationMatrix = matrixMult(translationMatrix3D(posX, posY, posZ), this.transformationMatrix);
-		
-		this.getChilds()
-			.forEach(child => {
-				console.log(child);
-				rotateX(rad, posX, posY, posZ)
-			});
+	rotateX(rad) {
+		this.transformationMatrix = matrixMult(this.transformationMatrix, translationMatrix3D(this.xOrigin, this.yOrigin, this.zOrigin));
+		this.transformationMatrix = matrixMult(this.transformationMatrix, xAxisRotationMatrix(rad));
+		this.transformationMatrix = matrixMult(this.transformationMatrix, translationMatrix3D(-this.xOrigin, -this.yOrigin, -this.zOrigin));
 	}
 	
-	getActualVertices() {
+	rotateY(rad) {
+		this.transformationMatrix = matrixMult(this.transformationMatrix, translationMatrix3D(this.xOrigin, this.yOrigin, this.zOrigin));
+		this.transformationMatrix = matrixMult(this.transformationMatrix, yAxisRotationMatrix(rad));
+		this.transformationMatrix = matrixMult(this.transformationMatrix, translationMatrix3D(-this.xOrigin, -this.yOrigin, -this.zOrigin));
+	}
+	
+	rotateZ(rad) {
+		this.transformationMatrix = matrixMult(this.transformationMatrix, translationMatrix3D(this.xOrigin, this.yOrigin, this.zOrigin));
+		this.transformationMatrix = matrixMult(this.transformationMatrix, zAxisRotationMatrix(rad));
+		this.transformationMatrix = matrixMult(this.transformationMatrix, translationMatrix3D(-this.xOrigin, -this.yOrigin, -this.zOrigin));
+	}
+	
+	getActualVertices(parentTransformationMatrix) {
 		var actualVertices = [];
 		var currentVertexCoordinate = [0, 0, 0];
 		let axisNum = 0; 
@@ -303,6 +309,12 @@ class Balok {
 					this.transformationMatrix,
 					currentVertexCoordinate.concat([1]), 4, 4, 1
 				);
+				
+				transformedCoordinate = matrixMult2(
+					parentTransformationMatrix,
+					transformedCoordinate, 4, 4, 1
+				);
+				
 				actualVertices = actualVertices.concat([
 					transformedCoordinate[0],
 					transformedCoordinate[1],
@@ -316,9 +328,17 @@ class Balok {
 	}
 	
 	render(gl, vertexBuffer, indexBuffer, textureBuffer) {
-		// console.log(this.getActualVertices());
+		this.renderWithParentTransformation(gl, vertexBuffer, indexBuffer, textureBuffer, scaleMatrix(1, 1, 1));
+	}
+	
+	renderWithParentTransformation(gl, vertexBuffer, indexBuffer, textureBuffer, parentTransformationMatrix) {
+		this.getChilds()
+			.forEach(child => {
+				child.renderWithParentTransformation(gl, vertexBuffer, indexBuffer, textureBuffer, matrixMult(parentTransformationMatrix, this.transformationMatrix));
+			});
+		
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getActualVertices()), gl.STATIC_DRAW);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getActualVertices(parentTransformationMatrix)), gl.STATIC_DRAW);
 		gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
@@ -329,6 +349,8 @@ class Balok {
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indices), gl.STATIC_DRAW);
 
 		gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+		
+		
 	}
 }
 
@@ -351,7 +373,7 @@ var vertCode = `
 		// Z dikali negatif karena vektor Z di WebGL berlawanan
 		vec4 transformedPosition = vec4(coordinates.xy, coordinates.z * -1.0, 1.0) * transformationMatrix;
 		gl_Position = transformedPosition;
-		colorFactor = min(max((1.0 - transformedPosition.z) / 2.0, 0.0), 1.0);
+		colorFactor = min(max((0.25 - transformedPosition.z) / 0.5, 0.0), 1.0) - 0.9;
 		v_texcoord = a_texcoord;
 	}
 `;
@@ -364,7 +386,7 @@ var fragCode = `
 	varying vec2 v_texcoord;
 	void main(void) {
 		//gl_FragColor = vec4(userColor * colorFactor, 1.0); //texture2D(uSampler, fTexCoord);
-		gl_FragColor = texture2D(u_texture, v_texcoord) * colorFactor;
+		gl_FragColor = vec4(colorFactor, colorFactor, colorFactor, 1.0) + texture2D(u_texture, v_texcoord);
 	}
 `;
 
@@ -397,26 +419,35 @@ const upperRightArm = new Balok(-3, 9, 0, 1, 2, 1); // Upper right arm
 const neck = new Balok(0, 11.5, 0, 1, 1, 1); // Neck
 const head = new Balok(0, 14.5, 0, 3, 3, 3); // Head
 
+lowerLeftLeg.setOrigin(1, 3.5, 0);
+upperLeftLeg.addChild(lowerLeftLeg);
 
-baloks = [
-	// new Balok(0, -0.5, 0, 100, 1, 100), // Plane
-	new Balok(1, 1, 0, 1, 2, 1), // Lower left leg (robot POV)
-	new Balok(-1, 1, 0, 1, 2, 1), // Lower right leg
-	new Balok(1, 4, 0, 1, 2, 1), // Upper left leg
-	new Balok(-1, 4, 0, 1, 2, 1), // Upper right leg
-	new Balok(0, 8, 0, 3, 4, 1), // Torso
-	new Balok(3, 6, 0, 1, 2, 1), // Lower left arm
-	new Balok(-3, 6, 0, 1, 2, 1), // Lower right arm
-	new Balok(3, 9, 0, 1, 2, 1), // Upper left arm
-	new Balok(-3, 9, 0, 1, 2, 1), // Upper right arm
-	new Balok(0, 11.5, 0, 1, 1, 1), // Neck
-	new Balok(0, 14.5, 0, 3, 3, 3) // Head
-];
+lowerRightLeg.setOrigin(-1, 3.5, 0);
+upperRightLeg.addChild(lowerRightLeg);
 
-baloks[2].addChild(baloks[0]);
-baloks[2].rotateX(Math.PI / 2, 1, 6.5, 0);
+upperLeftLeg.setOrigin(1, 6.5, 0);
+torso.addChild(upperLeftLeg);
 
+upperRightLeg.setOrigin(-1, 6.5, 0);
+torso.addChild(upperRightLeg);
 
+upperLeftArm.setOrigin(3, 9.5, 0);
+torso.addChild(upperLeftArm);
+
+upperRightArm.setOrigin(-3, 9.5, 0);
+torso.addChild(upperRightArm);
+
+neck.setOrigin(0, 9.5, 0);
+torso.addChild(neck);
+
+lowerLeftArm.setOrigin(3, 8.5, 0);
+upperLeftArm.addChild(lowerLeftArm);
+
+lowerRightArm.setOrigin(-3, 8.5, 0);
+upperRightArm.addChild(lowerRightArm);
+
+head.setOrigin(0, 11.5, 0);
+neck.addChild(head);
 
 // Combine
 gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
@@ -445,32 +476,16 @@ gl.enableVertexAttribArray(texcoordLocation);
 
 var textureLocation = gl.getUniformLocation(glObject.program, "u_texture");
 
-
-// Pass data
-/*
-gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-gl.bindBuffer(gl.ARRAY_BUFFER, texture_buffer);
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
-gl.bindBuffer(gl.ARRAY_BUFFER, null);		
-
-gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
-gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-*/
-// gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-gl.clearColor(0.0, 0.0, 0.0, 1.0);
+gl.clearColor(0.05, 0.05, 0.05, 1.0);
 gl.enable(gl.DEPTH_TEST);
 
 // Create texture
 var texture = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, texture);
  
-// Fill the texture with a 1x1 blue pixel.
+// Fill the texture
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-			  new Uint8Array([255, 255, 255, 255]));
+			  new Uint8Array([255, 0, 0, 255]));
  
 // Asynchronously load an image
 function loadTexture(url) {
@@ -498,7 +513,7 @@ function loadTexture(url) {
 	return imgPromise;
 }
 
-loadTexture("hole.jpg").then(
+loadTexture("img/randomTexture.png").then(
 	function fulfilled(img) {
 		console.log("Texture loaded");
 		render();
@@ -509,74 +524,202 @@ loadTexture("hole.jpg").then(
 	}
 );
 
-
-
-/*
-var myImg = document.createElement("img");
-myImg.addEventListener('load', function() {
-  // Load the texture
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, myImg);
-  // gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  render();
-});
-myImg.addEventListener('error', event => {
-	console.log(event.message);
-	alert("Error load the texture. .-.");
-});
-// myImg.src = "https://images.unsplash.com/photo-1614535683569-129faaa108f7?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=750&q=80";
-// myImg.src = "hole.jpg";
-myImg.crossOrigin = "";
-*/
-
 function render() {
 	gl.clear(gl.COLOR_BUFFER_BIT);
-	baloks.forEach(balok => {
-		balok.render(gl, vertex_buffer, index_buffer, texture_buffer);
-	});
+	torso.render(gl, vertex_buffer, index_buffer, texture_buffer);
 }
 
+const neckJointSlider = document.getElementById("neckJoint");
+const headJointSlider = document.getElementById("headJoint");
+const torsoJointSlider = document.getElementById("torsoJoint");
+const upperLeftArmJointSlider = document.getElementById("upperLeftArmJoint");
+const upperRightArmJointSlider = document.getElementById("upperRightArmJoint");
+const lowerLeftArmJointSlider = document.getElementById("lowerLeftArmJoint");
+const lowerRightArmJointSlider = document.getElementById("lowerRightArmJoint");
+const upperLeftLegJointSlider = document.getElementById("upperLeftLegJoint");
+const upperRightLegJointSlider = document.getElementById("upperRightLegJoint");
+const lowerLeftLegJointSlider = document.getElementById("lowerLeftLegJoint");
+const lowerRightLegJointSlider = document.getElementById("lowerRightLegJoint");
+
+var neckAngle = neckJointSlider.value * Math.PI / 180;
+var headAngle = headJointSlider.value * Math.PI / 180;
+var torsoAngle = torsoJointSlider.value * Math.PI / 180;
+var upperLeftArmAngle = upperLeftArmJointSlider.value * Math.PI / 180;
+var upperRightArmAngle = upperRightArmJointSlider.value * Math.PI / 180;
+var lowerLeftArmAngle = lowerLeftArmJointSlider.value * Math.PI / 180;
+var lowerRightArmAngle = lowerRightArmJointSlider.value * Math.PI / 180;
+var upperLeftLegAngle = upperLeftLegJointSlider.value * Math.PI / 180;
+var upperRightLegAngle = upperRightLegJointSlider.value * Math.PI / 180;
+var lowerLeftLegAngle = lowerLeftLegJointSlider.value * Math.PI / 180;
+var lowerRightLegAngle = lowerRightLegJointSlider.value * Math.PI / 180;
+
+let neckJointSliderUpdate = needRendered => {
+	const newNeckAngle = neckJointSlider.value * Math.PI / 180;
+	neck.rotateY(newNeckAngle - neckAngle);
+	neckAngle = newNeckAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+neckJointSlider.oninput = () => neckJointSliderUpdate(true);
+
+let headJointSliderUpdate = needRendered => {
+	const newHeadAngle = headJointSlider.value * Math.PI / 180;
+	head.rotateX(newHeadAngle - headAngle);
+	headAngle = newHeadAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+headJointSlider.oninput = () => headJointSliderUpdate(true);
+
+let torsoJointSliderUpdate = needRendered => {
+	const newTorsoAngle = torsoJointSlider.value * Math.PI / 180;
+	torso.rotateY(newTorsoAngle - torsoAngle);
+	torsoAngle = newTorsoAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+torsoJointSlider.oninput = () => torsoJointSliderUpdate(true);
+
+let upperLeftArmJointSliderUpdate = needRendered => {
+	const newUpperLeftArmAngle = upperLeftArmJointSlider.value * Math.PI / 180;
+	upperLeftArm.rotateZ(newUpperLeftArmAngle - upperLeftArmAngle);
+	upperLeftArmAngle = newUpperLeftArmAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+upperLeftArmJointSlider.oninput = () => upperLeftArmJointSliderUpdate(true);
+
+let lowerLeftArmJointSliderUpdate = needRendered => {
+	const newLowerLeftArmAngle = lowerLeftArmJointSlider.value * Math.PI / 180;
+	lowerLeftArm.rotateZ(newLowerLeftArmAngle - lowerLeftArmAngle);
+	lowerLeftArmAngle = newLowerLeftArmAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+lowerLeftArmJointSlider.oninput = () => lowerLeftArmJointSliderUpdate(true);
+
+let upperRightArmJointSliderUpdate = needRendered => {
+	const newUpperRightArmAngle = upperRightArmJointSlider.value * Math.PI / 180;
+	upperRightArm.rotateZ(newUpperRightArmAngle - upperRightArmAngle);
+	upperRightArmAngle = newUpperRightArmAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+upperRightArmJointSlider.oninput = () => upperRightArmJointSliderUpdate(true);
+
+let lowerRightArmJointSliderUpdate = needRendered => {
+	const newLowerRightArmAngle = lowerRightArmJointSlider.value * Math.PI / 180;
+	lowerRightArm.rotateZ(newLowerRightArmAngle - lowerRightArmAngle);
+	lowerRightArmAngle = newLowerRightArmAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+lowerRightArmJointSlider.oninput = () => lowerRightArmJointSliderUpdate(true);
+
+let upperLeftLegJointSliderUpdate = needRendered => {
+	const newUpperLeftLegAngle = upperLeftLegJointSlider.value * Math.PI / 180;
+	upperLeftLeg.rotateX(newUpperLeftLegAngle - upperLeftLegAngle);
+	upperLeftLegAngle = newUpperLeftLegAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+upperLeftLegJointSlider.oninput = () => upperLeftLegJointSliderUpdate(true);
+
+let lowerLeftLegJointSliderUpdate = needRendered => {
+	const newLowerLeftLegAngle = lowerLeftLegJointSlider.value * Math.PI / 180;
+	lowerLeftLeg.rotateX(newLowerLeftLegAngle - lowerLeftLegAngle);
+	lowerLeftLegAngle = newLowerLeftLegAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+lowerLeftLegJointSlider.oninput = () => lowerLeftLegJointSliderUpdate(true);
+
+let upperRightLegJointSliderUpdate = needRendered => {
+	const newUpperRightLegAngle = upperRightLegJointSlider.value * Math.PI / 180;
+	upperRightLeg.rotateX(newUpperRightLegAngle - upperRightLegAngle);
+	upperRightLegAngle = newUpperRightLegAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+upperRightLegJointSlider.oninput = () => upperRightLegJointSliderUpdate(true);
+
+let lowerRightLegJointSliderUpdate = needRendered => {
+	const newLowerRightLegAngle = lowerRightLegJointSlider.value * Math.PI / 180;
+	lowerRightLeg.rotateX(newLowerRightLegAngle - lowerRightLegAngle);
+	lowerRightLegAngle = newLowerRightLegAngle;
+	if (needRendered) {
+		render();
+	}
+};
+
+lowerRightLegJointSlider.oninput = () => lowerRightLegJointSliderUpdate(true);
+
 // Update
-currentMatrix = matrixMult(scaleMatrix(.05, .05, .05), currentMatrix);
-currentMatrix = matrixMult(translationMatrix(0, -0.5), currentMatrix);
+currentMatrix = matrixMult(scaleMatrix(.1, .1, .1), currentMatrix);
+currentMatrix = matrixMult(translationMatrix(0, -0.75), currentMatrix);
 gl.uniform3f(colorLoc, 1.0, 1.0, 1.0);
 gl.uniform1i(textureLocation, 0.0);
 gl.uniformMatrix4fv(translationMatrixLoc, false, new Float32Array(currentMatrix));
 
+torso.rotateY(torsoAngle);
+neck.rotateY(neckAngle);
+head.rotateX(headAngle);
+upperLeftArm.rotateZ(upperLeftArmAngle);
+lowerLeftArm.rotateZ(lowerLeftArmAngle);
+upperRightArm.rotateZ(upperRightArmAngle);
+lowerRightArm.rotateZ(lowerRightArmAngle);
+upperLeftLeg.rotateX(upperLeftLegAngle);
+lowerLeftLeg.rotateX(lowerLeftLegAngle);
+upperRightLeg.rotateX(upperRightLegAngle);
+lowerRightLeg.rotateX(lowerRightLegAngle);
+
 var yDegree = 0;
 var handDegree = 0;
 
-var rotateInterval;
-var rotating = false;
-
-function startRotating() {
-	rotating = true;
-	rotateInterval = setInterval(() => {
-		currentMatrix = matrixMult(yAxisRotationMatrix(yDegree), scaleMatrix(.05, .05, .05));
-		currentMatrix = matrixMult(translationMatrix(0, -0.5), currentMatrix);
-		gl.uniformMatrix4fv(translationMatrixLoc, false, new Float32Array(currentMatrix));
-		render();
-		yDegree += 0.05;
-	}, 40);
-}
-
-function stopRotating() {
-	clearInterval(rotateInterval);
-	rotating = false;
-}
-
-function switchRotating() {
-	if (rotating) {
-		stopRotating();
-	} else {
-		startRotating();
-	}
-}
-
-
-
-// Create stop animation
+var randomPose = () => {
+	torsoJointSlider.value = Math.floor(Math.random() * 361 - 180);
+	neckJointSlider.value = Math.floor(Math.random() * 121 - 60);
+	headJointSlider.value = Math.floor(Math.random() * 121 - 60);
+	upperLeftArmJointSlider.value = Math.floor(Math.random() * 271);
+	upperRightArmJointSlider.value = Math.floor(Math.random() * 271 - 135);
+	lowerLeftArmJointSlider.value = Math.floor(Math.random() * 91);
+	lowerRightArmJointSlider.value = Math.floor(Math.random() * 91 - 90);
+	upperLeftLegJointSlider.value = Math.floor(Math.random() * 121 - 60);
+	upperRightLegJointSlider.value = Math.floor(Math.random() * 121 - 60);
+	lowerLeftLegJointSlider.value = Math.floor(Math.random() * 91);
+	lowerRightLegJointSlider.value = Math.floor(Math.random() * 91);
+	
+	torsoJointSliderUpdate(false);
+	neckJointSliderUpdate(false);
+	headJointSliderUpdate(false);
+	upperLeftArmJointSliderUpdate(false);
+	upperRightArmJointSliderUpdate(false);
+	lowerLeftArmJointSliderUpdate(false);
+	lowerRightArmJointSliderUpdate(false);
+	upperLeftLegJointSliderUpdate(false);
+	upperRightLegJointSliderUpdate(false);
+	lowerLeftLegJointSliderUpdate(false);
+	lowerRightLegJointSliderUpdate(false);
+	
+	render();
+};

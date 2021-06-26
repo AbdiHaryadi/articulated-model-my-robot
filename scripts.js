@@ -461,13 +461,6 @@ gl.uniformMatrix4fv(translationMatrixLoc, false, new Float32Array(currentMatrix)
 var colorLoc = gl.getUniformLocation(glObject.program, "userColor");
 gl.uniform3f(colorLoc, 0.0, 0.0, 0.0);
 
-/*
-gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
-var vTexCoord = gl.getAttribLocation(shaderProgram, "vTexCoord");
-gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
-gl.enableVertexAttribArray(vTexCoord);
-*/
-
 
 gl.bindBuffer(gl.ARRAY_BUFFER, texture_buffer);
 var texcoordLocation = gl.getAttribLocation(glObject.program, "a_texcoord");
@@ -521,6 +514,7 @@ loadTexture("img/randomTexture.png").then(
 	
 	function rejected() {
 		console.log("Texture not found");
+		render();
 	}
 );
 
@@ -692,9 +686,6 @@ upperLeftLeg.rotateX(upperLeftLegAngle);
 lowerLeftLeg.rotateX(lowerLeftLegAngle);
 upperRightLeg.rotateX(upperRightLegAngle);
 lowerRightLeg.rotateX(lowerRightLegAngle);
-
-var yDegree = 0;
-var handDegree = 0;
 
 var randomPose = () => {
 	torsoJointSlider.value = Math.floor(Math.random() * 361 - 180);

@@ -2,7 +2,7 @@
 Program ini menyimulasikan pergerakan robot yang terdiri dari sendi-sendi.
 
 ## Cara menggunakan
-- Buka index.html
+- Buka index.html dengan Firefox atau Chrome.
 - Jika tekstur tidak dapat dimuat, ikuti langkah-langkah berikut: https://www.programmersought.com/article/1045305541/ (cek bagian 3). Ulangi lagi.
 
 ## Pembuat
